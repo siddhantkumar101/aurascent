@@ -128,7 +128,7 @@ export const mockProducts: Product[] = [
   }
 ];
 
-const BACKEND_URL = "http://localhost:5005/api";
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5005/api";
 
 export async function getProducts(filters: { family?: string; search?: string } = {}): Promise<Product[]> {
   try {
