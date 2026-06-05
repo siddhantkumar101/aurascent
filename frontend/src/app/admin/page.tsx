@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { getProducts, Product } from "@/lib/api";
+import { getProducts, Product, createProductAPI, deleteProductAPI } from "@/lib/api";
 import { useStore } from "@/lib/store";
 
 interface Order {
@@ -60,12 +60,11 @@ export default function AdminPage() {
     }
   };
 
-  const handleCreateProduct = (e: React.FormEvent) => {
+  const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName || !newInspired) return;
 
-    const newProd: Product = {
-      id: String(products.length + 1),
+    const payload: Partial<Product> = {
       name: newName,
       inspiredBy: newInspired,
       price: newPrice,
@@ -83,7 +82,18 @@ export default function AdminPage() {
       description: `Inspired by ${newInspired}. A high-fidelity fragrance recreation.`,
     };
 
-    setProducts([newProd, ...products]);
+    let createdProduct: Product | null = null;
+    
+    if (user?.token) {
+      createdProduct = await createProductAPI(payload, user.token);
+    }
+
+    const finalProduct: Product = createdProduct || {
+      ...payload,
+      id: String(products.length + 1),
+    } as Product;
+
+    setProducts([finalProduct, ...products]);
     
     setNewName("");
     setNewInspired("");
@@ -93,7 +103,10 @@ export default function AdminPage() {
     setNewBaseNotes("");
   };
 
-  const handleDeleteProduct = (id: string) => {
+  const handleDeleteProduct = async (id: string) => {
+    if (user?.token) {
+      await deleteProductAPI(id, user.token);
+    }
     setProducts(products.filter((p) => p.id !== id));
   };
 

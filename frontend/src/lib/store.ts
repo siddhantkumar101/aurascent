@@ -12,6 +12,7 @@ export interface UserSession {
   name: string;
   email: string;
   role: "user" | "admin";
+  token?: string;
 }
 
 interface StoreState {
@@ -24,7 +25,7 @@ interface StoreState {
   updateQuantity: (productId: string, size: string, quantity: number) => void;
   clearCart: () => void;
   toggleWishlist: (productId: string) => void;
-  login: (email: string, name?: string) => void;
+  login: (email: string, name?: string, role?: "user" | "admin", token?: string) => void;
   logout: () => void;
   setCartOpen: (open: boolean) => void;
 }
@@ -83,9 +84,21 @@ export const useStore = create<StoreState>()(
           return { wishlist: [...state.wishlist, productId] };
         }),
 
-      login: (email, name) => 
+      login: (email, name, role, token) => 
         set(() => {
           const lowerEmail = email.toLowerCase().trim();
+          
+          if (role && token) {
+            return {
+              user: {
+                name: name || (role === "admin" ? "Administrator" : "Customer"),
+                email: lowerEmail,
+                role: role,
+                token: token,
+              }
+            };
+          }
+
           if (lowerEmail === "admin@aurascent.com") {
             return {
               user: {

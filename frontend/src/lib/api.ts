@@ -198,3 +198,73 @@ export function getRecommendations(answers: { family: string; intensity: string 
   }
   return [mockProducts[0], mockProducts[2]]; // default best fits
 }
+
+export async function loginAPI(email: string, password: string): Promise<{ token: string; user: { name: string; email: string; role: "user" | "admin" } } | null> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (error) {
+    console.warn("Backend auth API not reachable for login");
+  }
+  return null;
+}
+
+export async function registerAPI(name: string, email: string, password: string, role?: string): Promise<{ token: string; user: { name: string; email: string; role: "user" | "admin" } } | null> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password, role }),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (error) {
+    console.warn("Backend auth API not reachable for register");
+  }
+  return null;
+}
+
+export async function createProductAPI(productData: Partial<Product>, token: string): Promise<Product | null> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/products`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify(productData),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        ...data,
+        id: data._id || data.id
+      };
+    }
+  } catch (error) {
+    console.error("Failed to create product in DB:", error);
+  }
+  return null;
+}
+
+export async function deleteProductAPI(id: string, token: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${BACKEND_URL}/products/${id}`, {
+      method: "DELETE",
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+    return res.ok;
+  } catch (error) {
+    console.error("Failed to delete product from DB:", error);
+  }
+  return false;
+}

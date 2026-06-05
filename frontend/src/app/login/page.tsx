@@ -4,6 +4,7 @@ import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useStore } from "@/lib/store";
+import { loginAPI, registerAPI } from "@/lib/api";
 
 function LoginContent() {
   const router = useRouter();
@@ -15,24 +16,56 @@ function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
+    setIsLoading(true);
+    setErrorMsg("");
 
-    // Special credentials check for Admin
-    if (email.toLowerCase().trim() === "admin@aurascent.com") {
-      if (password !== "admin123") {
-        alert("Invalid admin password. Try admin123");
-        return;
+    const emailTrimmed = email.toLowerCase().trim();
+
+    try {
+      if (isSignUp) {
+        // Try calling the backend Register API
+        const role = emailTrimmed === "admin@aurascent.com" ? "admin" : "user";
+        const result = await registerAPI(name || "Customer", emailTrimmed, password, role);
+        if (result && result.user) {
+          login(result.user.email, result.user.name, result.user.role, result.token);
+          router.push(result.user.role === "admin" ? "/admin" : redirect);
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        // Try calling the backend Login API
+        const result = await loginAPI(emailTrimmed, password);
+        if (result && result.user) {
+          login(result.user.email, result.user.name, result.user.role, result.token);
+          router.push(result.user.role === "admin" ? "/admin" : redirect);
+          setIsLoading(false);
+          return;
+        }
       }
-      login(email);
-      router.push("/admin");
-      return;
+    } catch (err) {
+      console.warn("Backend auth failed, attempting fallback local verification:", err);
     }
 
-    login(email, name || "Customer");
-    router.push(redirect);
+    // --- Fallback Offline/Mock Behavior if backend is down or returned invalid response ---
+    if (emailTrimmed === "admin@aurascent.com") {
+      if (password !== "admin123") {
+        setErrorMsg("Invalid admin password. Try admin123");
+        setIsLoading(false);
+        return;
+      }
+      login(emailTrimmed, "Administrator", "admin", "mock-token-admin-123");
+      router.push("/admin");
+    } else {
+      login(emailTrimmed, name || "Customer", "user", "mock-token-user-123");
+      router.push(redirect);
+    }
+    setIsLoading(false);
   };
 
   return (
@@ -60,6 +93,12 @@ function LoginContent() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {errorMsg && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded">
+                {errorMsg}
+              </div>
+            )}
+
             {isSignUp && (
               <div>
                 <label className="block text-xs font-semibold text-slate mb-1">Your Name</label>
@@ -118,9 +157,10 @@ function LoginContent() {
 
             <button
               type="submit"
-              className="w-full py-3 bg-gold hover:bg-accent text-noir font-bold text-xs uppercase tracking-wider rounded transition-colors"
+              disabled={isLoading}
+              className="w-full py-3 bg-gold hover:bg-accent disabled:bg-slate/50 disabled:text-slate text-noir font-bold text-xs uppercase tracking-wider rounded transition-colors"
             >
-              {isSignUp ? "Create Account" : "Sign In"}
+              {isLoading ? (isSignUp ? "Creating Account..." : "Signing In...") : (isSignUp ? "Create Account" : "Sign In")}
             </button>
           </form>
 
