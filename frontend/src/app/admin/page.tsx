@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { getProducts, Product, mockProducts } from "@/lib/api";
+import { getProducts, Product } from "@/lib/api";
+import { useStore } from "@/lib/store";
 
 interface Order {
   id: string;
@@ -13,9 +14,17 @@ interface Order {
 }
 
 export default function AdminPage() {
+  const user = useStore((state) => state.user);
+  const login = useStore((state) => state.login);
+  const logout = useStore((state) => state.logout);
+
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState<"products" | "orders" | "coupons">("products");
+
+  // Admin login form states
+  const [adminEmail, setAdminEmail] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
 
   // New product form states
   const [newName, setNewName] = useState("");
@@ -27,19 +36,29 @@ export default function AdminPage() {
   const [newBaseNotes, setNewBaseNotes] = useState("");
 
   useEffect(() => {
-    // Initial products load
-    const load = async () => {
-      const data = await getProducts();
-      setProducts(data);
-    };
-    load();
+    if (user?.role === "admin") {
+      const load = async () => {
+        const data = await getProducts();
+        setProducts(data);
+      };
+      load();
 
-    // Seeding mock orders
-    setOrders([
-      { id: "ASC-874291", email: "client1@example.com", total: 63.99, status: "Pending", date: "June 4, 2026" },
-      { id: "ASC-194829", email: "client2@example.com", total: 29.00, status: "Shipped", date: "June 2, 2026" },
-    ]);
-  }, []);
+      setOrders([
+        { id: "ASC-874291", email: "client1@example.com", total: 63.99, status: "Pending", date: "June 4, 2026" },
+        { id: "ASC-194829", email: "client2@example.com", total: 29.00, status: "Shipped", date: "June 2, 2026" },
+      ]);
+    }
+  }, [user]);
+
+  const handleAdminLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const emailLower = adminEmail.toLowerCase().trim();
+    if (emailLower === "admin@aurascent.com" && adminPassword === "admin123") {
+      login(emailLower);
+    } else {
+      alert("Invalid administrator credentials. Only the main manager account is permitted.");
+    }
+  };
 
   const handleCreateProduct = (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,7 +85,6 @@ export default function AdminPage() {
 
     setProducts([newProd, ...products]);
     
-    // Reset form
     setNewName("");
     setNewInspired("");
     setNewPrice(29);
@@ -87,29 +105,77 @@ export default function AdminPage() {
     );
   };
 
+  // If not logged in as Admin, show Admin Login Card
+  if (user?.role !== "admin") {
+    return (
+      <div className="min-h-screen bg-ivory font-sans text-noir flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white border border-light/60 rounded-lg p-8 shadow-sm text-left">
+          <div className="text-center mb-8">
+            <span className="h-12 w-12 rounded-full bg-gold/15 text-gold flex items-center justify-center mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+              </svg>
+            </span>
+            <span className="text-[10px] uppercase tracking-widest font-bold text-gold mb-1 block">Staff Portal</span>
+            <h1 className="font-serif text-3xl font-bold text-noir">Administrator Access</h1>
+            <p className="text-xs text-slate mt-2">Only one manager account has permission to configure catalogue settings.</p>
+          </div>
+
+          <form onSubmit={handleAdminLogin} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate mb-1">Admin Username / Email</label>
+              <input
+                type="email"
+                required
+                placeholder="admin@aurascent.com"
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+                className="w-full px-3 py-2 border border-light rounded text-sm focus:outline-none focus:border-gold"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-xs font-semibold text-slate mb-1">Secret Password</label>
+              <input
+                type="password"
+                required
+                placeholder="••••••••"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-light rounded text-sm focus:outline-none focus:border-gold"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3 bg-gold hover:bg-accent text-noir font-bold text-xs uppercase tracking-wider rounded transition-colors"
+            >
+              Verify & Enter
+            </button>
+          </form>
+
+          <div className="border-t border-light/60 mt-6 pt-4 text-center">
+            <Link href="/" className="text-xs font-semibold text-gold hover:underline">
+              ← Return to Homepage
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Admin Dashboard Content (Gated and Secure)
   return (
     <div className="min-h-screen bg-ivory font-sans text-noir">
-      {/* Navigation */}
-      <header className="sticky top-0 z-40 bg-ivory/80 backdrop-blur-md border-b border-light/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="font-serif text-3xl font-bold tracking-wider">AURASCENT</span>
-            <span className="h-2 w-2 rounded-full bg-gold"></span>
-          </Link>
-          <span className="text-xs font-semibold uppercase tracking-widest text-slate">Administrator Panel</span>
-        </div>
-      </header>
-
-      {/* Main Grid */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex flex-col lg:flex-row gap-8 items-start text-left">
           
           {/* Sidebar Menu */}
-          <div className="flex flex-wrap gap-2 lg:flex-col lg:w-64 shrink-0">
+          <div className="flex flex-wrap gap-2 lg:flex-col lg:w-64 shrink-0 w-full">
             <span className="font-bold text-xs uppercase tracking-wider text-slate mb-2 hidden lg:block">Admin Management</span>
             <button
               onClick={() => setActiveTab("products")}
-              className={`px-4 py-2.5 rounded text-xs font-semibold text-left transition-colors ${
+              className={`px-4 py-2.5 rounded text-xs font-semibold text-left transition-colors flex-1 lg:flex-initial ${
                 activeTab === "products" ? "bg-noir text-white" : "bg-white border border-light text-slate"
               }`}
             >
@@ -117,7 +183,7 @@ export default function AdminPage() {
             </button>
             <button
               onClick={() => setActiveTab("orders")}
-              className={`px-4 py-2.5 rounded text-xs font-semibold text-left transition-colors ${
+              className={`px-4 py-2.5 rounded text-xs font-semibold text-left transition-colors flex-1 lg:flex-initial ${
                 activeTab === "orders" ? "bg-noir text-white" : "bg-white border border-light text-slate"
               }`}
             >
@@ -125,16 +191,23 @@ export default function AdminPage() {
             </button>
             <button
               onClick={() => setActiveTab("coupons")}
-              className={`px-4 py-2.5 rounded text-xs font-semibold text-left transition-colors ${
+              className={`px-4 py-2.5 rounded text-xs font-semibold text-left transition-colors flex-1 lg:flex-initial ${
                 activeTab === "coupons" ? "bg-noir text-white" : "bg-white border border-light text-slate"
               }`}
             >
               Discount Coupons
             </button>
-            <div className="border-t border-light/60 mt-4 pt-4 hidden lg:block">
+            
+            <div className="border-t border-light/60 mt-4 pt-4 w-full flex items-center justify-between lg:block">
               <Link href="/products" className="text-xs font-bold text-gold hover:underline">
-                ← Go to Catalogue
+                ← Catalogue
               </Link>
+              <button
+                onClick={logout}
+                className="lg:mt-4 text-xs font-bold text-red-600 hover:underline"
+              >
+                Sign Out
+              </button>
             </div>
           </div>
 

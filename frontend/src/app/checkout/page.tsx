@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 
 export default function CheckoutPage() {
+  const router = useRouter();
   const cart = useStore((state) => state.cart);
   const clearCart = useStore((state) => state.clearCart);
+  const user = useStore((state) => state.user);
 
   // Form states
   const [email, setEmail] = useState("");
@@ -23,6 +26,17 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [orderId, setOrderId] = useState("");
+
+  // Enforce Login Gate
+  useEffect(() => {
+    if (!user) {
+      router.push("/login?redirect=/checkout");
+    } else {
+      // Pre-fill email and name from logged-in user
+      setEmail(user.email || "");
+      setName(user.name || "");
+    }
+  }, [user, router]);
 
   const subtotal = cart.reduce((sum, item) => {
     const itemPrice = item.selectedSize === "100ml" ? item.product.price + 15 : item.product.price;
@@ -58,6 +72,14 @@ export default function CheckoutPage() {
     }, 2000);
   };
 
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-ivory flex items-center justify-center font-sans">
+        <span className="font-serif text-lg text-slate animate-pulse">Checking credentials...</span>
+      </div>
+    );
+  }
+
   if (isCompleted) {
     return (
       <div className="min-h-screen bg-ivory flex flex-col items-center justify-center font-sans text-center p-4">
@@ -69,7 +91,7 @@ export default function CheckoutPage() {
         
         <span className="text-xs uppercase tracking-widest font-bold text-gold mb-2 block">Order Confirmed</span>
         <h1 className="font-serif text-4xl font-bold mb-4">Thank You For Your Order!</h1>
-        <p className="text-slate text-sm max-w-md mb-8">
+        <p className="text-slate text-sm max-w-md mb-8 px-4">
           Your order <strong>{orderId}</strong> has been successfully placed. We have sent a confirmation email to <strong>{email}</strong>.
         </p>
 
@@ -85,23 +107,12 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-ivory font-sans text-noir">
-      {/* Navigation */}
-      <header className="sticky top-0 z-40 bg-ivory/80 backdrop-blur-md border-b border-light/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="font-serif text-3xl font-bold tracking-wider">AURASCENT</span>
-            <span className="h-2 w-2 rounded-full bg-gold"></span>
-          </Link>
-          <span className="text-xs font-semibold uppercase tracking-widest text-slate">Secure Checkout</span>
-        </div>
-      </header>
-
       {/* Main Grid */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 sm:gap-16 items-start">
           
           {/* Left: Shipping & Payment Details */}
-          <div className="text-left bg-white rounded-lg border border-light/60 p-8 shadow-sm">
+          <div className="text-left bg-white rounded-lg border border-light/60 p-6 sm:p-8 shadow-sm">
             <h2 className="font-serif text-2xl font-bold text-noir mb-6">Shipping Details</h2>
             
             <form onSubmit={handleCheckout} className="space-y-6">
@@ -110,9 +121,9 @@ export default function CheckoutPage() {
                 <input
                   type="email"
                   required
+                  disabled
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-light rounded text-sm text-noir focus:outline-none focus:border-gold"
+                  className="w-full px-3 py-2 border border-light rounded bg-light/35 text-sm text-slate focus:outline-none"
                 />
               </div>
 
@@ -204,7 +215,7 @@ export default function CheckoutPage() {
               <button
                 type="submit"
                 disabled={isProcessing || cart.length === 0}
-                className="w-full py-4 bg-gold hover:bg-accent disabled:bg-slate text-noir font-bold tracking-wide rounded uppercase transition-colors"
+                className="w-full py-4 bg-gold hover:bg-accent disabled:bg-slate text-noir font-bold tracking-wide rounded uppercase transition-colors text-sm"
               >
                 {isProcessing ? "Processing Payment..." : `Pay $${total}`}
               </button>
@@ -212,7 +223,7 @@ export default function CheckoutPage() {
           </div>
 
           {/* Right: Order Summary */}
-          <div className="text-left bg-white rounded-lg border border-light/60 p-8 shadow-sm">
+          <div className="text-left bg-white rounded-lg border border-light/60 p-6 sm:p-8 shadow-sm">
             <h2 className="font-serif text-2xl font-bold text-noir mb-6">Order Summary</h2>
 
             {cart.length === 0 ? (
@@ -238,7 +249,7 @@ export default function CheckoutPage() {
             <form onSubmit={handleApplyCoupon} className="flex gap-2 mb-6">
               <input
                 type="text"
-                placeholder="Discount Code (e.g. WELCOME15)"
+                placeholder="Discount Code"
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value)}
                 className="flex-1 px-3 py-2 border border-light rounded text-xs text-noir focus:outline-none focus:border-gold"
