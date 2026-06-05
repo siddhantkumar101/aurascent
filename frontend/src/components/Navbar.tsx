@@ -27,8 +27,10 @@ export default function Navbar() {
         <nav className="hidden md:flex items-center gap-8 text-sm font-medium tracking-wide">
           <Link href="/products" className="text-slate hover:text-gold transition-colors">Catalogue</Link>
           <Link href="/quiz" className="text-slate hover:text-gold transition-colors">Scent Finder</Link>
-          {user?.role === "admin" && (
+          {user?.role === "admin" ? (
             <Link href="/admin" className="text-gold font-bold hover:text-accent transition-colors">Admin Panel</Link>
+          ) : (
+            <Link href="/admin" className="text-slate hover:text-gold transition-colors">Admin Portal</Link>
           )}
         </nav>
 
@@ -108,13 +110,21 @@ export default function Navbar() {
           >
             Scent Finder Quiz
           </Link>
-          {user?.role === "admin" && (
+          {user?.role === "admin" ? (
             <Link 
               href="/admin" 
               onClick={() => setIsMobileMenuOpen(false)}
               className="text-sm font-bold text-gold hover:text-accent py-1"
             >
               Admin Panel
+            </Link>
+          ) : (
+            <Link 
+              href="/admin" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-sm font-semibold text-slate hover:text-gold py-1"
+            >
+              Admin Portal
             </Link>
           )}
 

@@ -98,11 +98,22 @@ function LoginContent() {
               />
             </div>
 
-            {/* Test credentials tips */}
+             {/* Test credentials tips */}
             <div className="bg-light/30 border border-light/60 p-3 rounded text-[10px] text-slate space-y-1">
               <span className="font-bold text-noir block uppercase tracking-wide">Test Credentials:</span>
               <span className="block">• **Customer**: Enter any email and password</span>
               <span className="block">• **Admin**: `admin@aurascent.com` / `admin123`</span>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail("admin@aurascent.com");
+                  setPassword("admin123");
+                }}
+                className="w-full mt-2 py-1 border border-dashed border-gold hover:bg-gold/15 text-gold text-[10px] font-bold uppercase rounded cursor-pointer transition-colors"
+              >
+                Quick-Fill Admin Credentials
+              </button>
             </div>
 
             <button
@@ -114,13 +125,23 @@ function LoginContent() {
           </form>
 
           {/* Toggle */}
-          <div className="border-t border-light/60 mt-6 pt-4 text-center">
-            <button
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-xs font-semibold text-gold hover:text-accent transition-colors"
-            >
-              {isSignUp ? "Already have an account? Sign In" : "New to AuraScent? Create Account"}
-            </button>
+          <div className="border-t border-light/60 mt-6 pt-4 text-center space-y-2">
+            <div>
+              <button
+                onClick={() => setIsSignUp(!isSignUp)}
+                className="text-xs font-semibold text-gold hover:text-accent transition-colors"
+              >
+                {isSignUp ? "Already have an account? Sign In" : "New to AuraScent? Create Account"}
+              </button>
+            </div>
+            <div>
+              <Link
+                href="/admin"
+                className="text-xs text-slate hover:text-noir underline transition-colors"
+              >
+                Access Admin Portal directly
+              </Link>
+            </div>
           </div>
 
         </div>
